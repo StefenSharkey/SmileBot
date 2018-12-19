@@ -1,0 +1,81 @@
+import org.apache.tools.ant.filters.ReplaceTokens
+
+plugins {
+    id'java'
+    id'application'
+    id'com.github.johnrengelman.shadow' version '2.0.4'
+}
+
+group 'com.stefensharkey.smilebot'
+def ver = new Version(version: '1.0-DADDYFUCKMEHARDER')
+version ver.toString()
+mainClassName = 'com.stefensharkey.smilebot.SmileBot'
+
+apply plugin: 'java'
+
+sourceCompatibility = 10
+
+def jdaVersion = "3.8.1_439"
+def jdaUtilitiesVersion = "2.1.4"
+def lavaplayerVersion = "1.3.10"
+def lavalinkClientVersion = "3.0"
+def logbackClassicVersion = "1.3.0-alpha4"
+def sqliteJdbcVersion = "3.23.1"
+def jupiterVersion = "5.2.0"
+
+repositories {
+    mavenCentral()
+    jcenter()
+
+    maven {
+        url 'https://jitpack.io'
+    }
+}
+
+dependencies {
+    compile "net.dv8tion:JDA:$jdaVersion"
+    compile "com.jagrosh:jda-utilities:$jdaUtilitiesVersion"
+    compile "com.sedmelluq:lavaplayer:$lavaplayerVersion"
+    compile "com.github.FredBoat:Lavalink-Client:$lavalinkClientVersion"
+    compile "ch.qos.logback:logback-classic:$logbackClassicVersion"
+    compile "org.xerial:sqlite-jdbc:$sqliteJdbcVersion"
+    testCompile "org.junit.jupiter:junit-jupiter-api:$jupiterVersion"
+}
+
+//Task for the versioning system
+task prepareSource(type: Copy) {
+    from 'src/main/java'
+    into 'build/prepared-src'
+    filter(ReplaceTokens, tokens: [
+            version: ver.toString()
+    ])
+    dependsOn clean
+}
+prepareSource.dependsOn clean
+
+task copyAssets(type: Copy) {
+    from 'assets'
+    into 'build/assets'
+}
+
+compileJava {
+    source = prepareSource.destinationDir
+    classpath = sourceSets.main.compileClasspath
+    options.encoding = 'UTF-8'
+    dependsOn prepareSource
+    dependsOn copyAssets
+}
+
+build.dependsOn shadowJar
+
+artifacts {
+    archives shadowJar
+}
+
+class Version {
+    String version
+
+    String toString() {
+        "${version}"
+    }
+}
